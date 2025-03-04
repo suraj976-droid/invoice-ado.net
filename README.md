@@ -1,2 +1,4 @@
 # invoice-ado.net
-Invoice code can also consist emial send invoice
+1) Invoice code
+2) can also consist emaill send along with invoice
+3) Export to Excel
