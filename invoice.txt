@@ -1,0 +1,291 @@
+Test Invoice can use as for Project
+
+
+string s = @"
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  padding: 20px;
+}
+
+.invoice {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.invoice-header {
+  border-bottom: 2px solid #f1f1f1;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.invoice-header h1 {
+  font-size: 28px;
+  margin: 0;
+}
+
+.invoice-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.invoice-info p {
+  margin: 5px 0;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.invoice-table th, .invoice-table td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.invoice-table th {
+  background-color: #f1f1f1;
+}
+
+.invoice-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+}
+
+.footer {
+  margin-top: 20px;
+  text-align: center;
+  color: #888;
+}
+</style>
+<body>
+<div class='invoice'>
+<div class='invoice-header'>
+<h1 align='center'>Fees Receipt</h1>
+<div class='invoice-info'>
+<p><strong>Invoice Number:</strong> INV-00" + $"{lblId.Text}" + @"</p>
+<p><strong>Name:</strong> " + $"{lblName.Text}" + @"</p>
+<p><strong>Date:</strong> " + $"{TextBox1.Text}" + @"</p>
+</div>
+<div class='invoice-info'>
+<p><strong>Email ID:</strong>" + $"{lblEmail.Text}" + @"</p>
+<p><strong>Contact No:</strong> " + $"{lblContact.Text}" + @"</p>
+</div>
+</div>
+<table class='invoice-table'>
+<thead>
+<tr>
+<th>Course</th>
+<th>Total Fees</th>
+<th>Paid Fees</th>
+<th>Balance Fees</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Java Course</td>
+<td>5000</td>
+<td>" + $"{txtPaid.Text}" + @"</td>
+<td>" + $"{lblBal.Text}" + @"</td>
+</tr>
+</tbody>
+</table>
+<div class='invoice-total'>
+<p><strong>Course Fees:</strong></p>
+<p>" + $"{lblBalance.Text}" + @"</p>
+</div>
+<div class='footer'>
+<p>Feel Free to Connect Us!</p>
+</div>
+</div></body>";
+
+
+            byte[] pdfBytes = GeneratePdfFromHtml(s);
+
+            // Send email with PDF attachment
+            SendEmailWithAttachment(pdfBytes);
+        }
+
+        private byte[] GeneratePdfFromHtml(string htmlContent)
+        {
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                Document document = new Document(PageSize.A4, 10f, 10f, 10f, 10f);
+                PdfWriter writer = PdfWriter.GetInstance(document, memoryStream);
+                document.Open();
+
+                using (StringReader stringReader = new StringReader(htmlContent))
+                {
+                    XMLWorkerHelper.GetInstance().ParseXHtml(writer, document, stringReader);
+                }
+
+                document.Close();
+                return memoryStream.ToArray();
+            }
+        }
+
+        private void SendEmailWithAttachment(byte[] attachmentBytes)
+        {
+            MailMessage mailMessage = new MailMessage();
+            mailMessage.From = new MailAddress("khelojikrish@gmail.com");
+            mailMessage.To.Add(lblEmail.Text);
+            mailMessage.Subject = "Fees Receipt";
+            mailMessage.Body = "Please find the Fees Receipt attachment.";
+            mailMessage.IsBodyHtml = true;
+
+            // Attach PDF
+            MemoryStream stream = new MemoryStream(attachmentBytes);
+            mailMessage.Attachments.Add(new Attachment(stream, "offer_letter.pdf", "application/pdf"));
+
+            SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587);
+            smtpClient.Credentials = new NetworkCredential("khelojikrish@gmail.com", "pcrluqlodjnnhgmj");
+            smtpClient.EnableSsl = true;
+
+            try
+            {
+                smtpClient.Send(mailMessage);
+                Response.Write("<script>alert('Receipt Send Successfully');</script>");
+                ClearDetails();
+                
+            }
+            catch (Exception ex)
+            {
+                // Handle exception
+                throw ex;
+            }
+            finally
+            {
+                // Clean up resources
+                stream.Dispose();
+                mailMessage.Dispose();
+                smtpClient.Dispose();
+            }
+        }
+
+
+
+
+
+Frontend Sample:
+
+
+<%@ Page Title="" Language="C#" MasterPageFile="~/User.Master" AutoEventWireup="true" CodeBehind="ViewBillUser.aspx.cs" Inherits="Society.ViewBillUser" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
+</asp:Content>
+
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
+    <asp:Panel ID="pnlBillDetails" runat="server" CssClass="card p-3">
+        <h4>Bill Payment</h4>
+        <hr />
+        <p><strong>Flat Number:</strong> <asp:Label ID="lblFlatNumber" runat="server" /></p>
+        <p><strong>Bill Details:</strong> <asp:Label ID="lblBillTitle" runat="server" /></p>
+        <p><strong>Bill Month:</strong> <asp:Label ID="lblBillMonth" runat="server" /></p>
+        <p><strong>Bill Amount:</strong> <asp:Label ID="lblBillAmount" runat="server" /></p>
+        <p><strong>Payment Date:</strong> <asp:Label ID="lblPaymentDate" runat="server" /></p>
+        <p><strong>Paid Bill Amount:</strong> <asp:Label ID="lblPaidAmount" runat="server" /></p>
+        <p><strong>Payment Method:</strong> <asp:Label ID="lblPaymentMethod" runat="server" /></p>
+        <asp:Button ID="btnGeneratePDF" runat="server" Text="Generate Invoice PDF" CssClass="btn btn-primary" OnClick="btnGeneratePDF_Click" />
+    </asp:Panel>
+</asp:Content>
+
+
+
+
+
+
+CodeBehind:
+
+using iTextSharp.text.pdf;
+using iTextSharp.text;
+using Society;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.IO;
+using System;
+
+
+namespace Society
+{
+    public partial class ViewBillUser : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                if (Request.QueryString["BillID"] != null)
+                {
+                    LoadBillDetails(Request.QueryString["BillID"].ToString());
+                }
+            }
+        }
+
+        private void LoadBillDetails(string billID)
+        {
+            string cs = ConfigurationManager.ConnectionStrings["Task4"].ConnectionString;
+            SqlConnection conn = new SqlConnection(cs);
+            conn.Open();
+            string query = "exec LoadBill '" + billID + "'";
+            SqlCommand cmd = new SqlCommand(query, conn);
+            SqlDataReader reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                lblBillTitle.Text = reader["BillTitle"].ToString();
+                lblFlatNumber.Text = reader["FlatNumber"].ToString();
+                lblBillAmount.Text = reader["BillAmount"].ToString();
+                lblPaymentDate.Text = Convert.ToDateTime(reader["PaymentDate"]).ToString("dd/MM/yyyy");
+                lblBillMonth.Text = reader["BillMonth"].ToString();
+                lblPaidAmount.Text = reader["PaidAmount"].ToString();
+                lblPaymentMethod.Text = reader["PaymentMethod"].ToString();
+            }
+            reader.Close();
+            conn.Close();
+        }
+
+        protected void btnGeneratePDF_Click(object sender, EventArgs e)
+        {
+            GenerateInvoicePDF();
+        }
+
+        private void GenerateInvoicePDF()
+        {
+            string fileName = "Invoice_" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".pdf";
+            string filePath = Server.MapPath("~/Invoices/") + fileName;
+
+            if (!Directory.Exists(Server.MapPath("~/Invoices/")))
+            {
+                Directory.CreateDirectory(Server.MapPath("~/Invoices/"));
+            }
+
+            Document doc = new Document(PageSize.A4);
+            PdfWriter.GetInstance(doc, new FileStream(filePath, FileMode.Create));
+            doc.Open();
+
+            Font titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18);
+            Font normalFont = FontFactory.GetFont(FontFactory.HELVETICA, 12);
+
+            doc.Add(new Paragraph("Invoice", titleFont) { Alignment = Element.ALIGN_CENTER });
+            doc.Add(new Paragraph(" "));
+            doc.Add(new Paragraph("Flat Number: " + lblFlatNumber.Text, normalFont));
+            doc.Add(new Paragraph("Bill Title: " + lblBillTitle.Text, normalFont));
+            doc.Add(new Paragraph("Bill Month: " + lblBillMonth.Text, normalFont));
+            doc.Add(new Paragraph("Bill Amount: $" + lblBillAmount.Text, normalFont));
+            doc.Add(new Paragraph("Payment Date: " + lblPaymentDate.Text, normalFont));
+            doc.Add(new Paragraph("Paid Amount: $" + lblPaidAmount.Text, normalFont));
+            doc.Add(new Paragraph("Payment Method: " + lblPaymentMethod.Text, normalFont));
+            doc.Close();
+
+            Response.ContentType = "application/pdf";
+            Response.AppendHeader("Content-Disposition", "attachment; filename=" + fileName);
+            Response.TransmitFile(filePath);
+            Response.End();
+        }
+    }
+}
